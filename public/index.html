@@ -1,20 +1,473 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="Video Production Manager - Project Management Tool"
-    />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <title>Video Production Manager</title>
-  </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-  </body>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Video Production Projects</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f3f4f6; color: #1f2937; }
+
+/* Header */
+header { background: #fff; padding: 16px 24px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; }
+header h1 { font-size: 20px; font-weight: 700; }
+
+/* Buttons */
+.btn { cursor: pointer; border: none; border-radius: 6px; padding: 8px 16px; font-size: 14px; font-weight: 500; transition: all 0.2s; }
+.btn-primary { background: #3b82f6; color: #fff; display: flex; align-items: center; gap: 6px; }
+.btn-primary:hover { background: #2563eb; }
+.btn-outline { background: #fff; border: 1px solid #e5e7eb; color: #374151; }
+.btn-outline:hover { background: #f9fafb; }
+.btn-danger { background: #ef4444; color: #fff; }
+.btn-danger:hover { background: #dc2626; }
+
+/* Toolbar */
+.toolbar { padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
+.view-toggle { display: flex; gap: 4px; background: #fff; padding: 4px; border-radius: 8px; border: 1px solid #e5e7eb; }
+.view-toggle button { padding: 6px 16px; border: none; background: transparent; border-radius: 6px; font-size: 14px; font-weight: 500; color: #6b7280; cursor: pointer; transition: all 0.2s; }
+.view-toggle button.active { background: #3b82f6; color: #fff; }
+.view-toggle button:hover:not(.active) { background: #f3f4f6; color: #374151; }
+
+/* Content */
+#content { padding: 0 24px 24px; }
+
+/* Status Badges */
+.badge { display: inline-flex; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+.badge-open { background: #e5e7eb; color: #374151; }
+.badge-progress { background: #dbeafe; color: #1d4ed8; }
+.badge-testing { background: #fef3c7; color: #92400e; }
+.badge-done { background: #dcfce7; color: #166534; }
+
+/* Avatar */
+.avatar { width: 28px; height: 28px; border-radius: 50%; background: #3b82f6; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
+
+/* Gantt View */
+.gantt { background: #fff; border-radius: 8px; overflow: hidden; }
+.gantt-header, .gantt-row { display: grid; grid-template-columns: 200px 1fr; }
+.gantt-header { border-bottom: 1px solid #e5e7eb; }
+.gantt-header > div:first-child { padding: 12px; font-size: 13px; font-weight: 500; color: #6b7280; border-right: 1px solid #e5e7eb; }
+.gantt-weeks { display: grid; grid-template-columns: repeat(8, 1fr); }
+.gantt-weeks > div { padding: 12px 8px; font-size: 11px; font-weight: 500; color: #6b7280; text-align: center; border-right: 1px solid #e5e7eb; }
+.gantt-weeks > div:last-child { border-right: none; }
+.phase-header { background: #f9fafb; padding: 12px; font-weight: 600; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+.phase-header:hover { background: #f3f4f6; }
+.task-row { border-bottom: 1px solid #e5e7eb; cursor: pointer; transition: background 0.2s; }
+.task-row:hover { background: #f9fafb; }
+.task-info { padding: 12px; border-right: 1px solid #e5e7eb; }
+.task-info .id { font-size: 12px; color: #3b82f6; font-weight: 500; }
+.task-info .name { font-size: 14px; margin-top: 2px; }
+.task-timeline { position: relative; padding: 8px; min-height: 48px; }
+.task-bar { position: absolute; top: 50%; transform: translateY(-50%); height: 24px; border-radius: 4px; color: #fff; font-size: 12px; display: flex; align-items: center; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-pre { background: #3b82f6; }
+.bar-prod { background: #f59e0b; }
+.bar-post { background: #22c55e; }
+
+/* Kanban View */
+.kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+@media (max-width: 1024px) { .kanban { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .kanban { grid-template-columns: 1fr; } }
+.kanban-column { display: flex; flex-direction: column; }
+.kanban-header { padding: 12px; border-radius: 8px 8px 0 0; font-weight: 600; font-size: 14px; }
+.kanban-header.open { background: #e5e7eb; color: #374151; }
+.kanban-header.progress { background: #dbeafe; color: #1d4ed8; }
+.kanban-header.testing { background: #fef3c7; color: #92400e; }
+.kanban-header.done { background: #dcfce7; color: #166534; }
+.kanban-cards { flex: 1; background: #f3f4f6; border-radius: 0 0 8px 8px; padding: 8px; min-height: 200px; }
+.kanban-card { background: #fff; padding: 12px; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 8px; cursor: pointer; transition: box-shadow 0.2s; }
+.kanban-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.kanban-card .id { font-size: 11px; color: #6b7280; font-weight: 500; }
+.kanban-card .name { font-size: 14px; font-weight: 500; margin: 4px 0; }
+.kanban-card .phase { font-size: 11px; color: #3b82f6; text-transform: uppercase; margin-bottom: 12px; }
+.kanban-card .footer { display: flex; justify-content: space-between; align-items: center; }
+.kanban-card .date { font-size: 12px; color: #6b7280; }
+
+/* List View */
+.list { background: #fff; border-radius: 8px; overflow: hidden; }
+.list-header { display: grid; grid-template-columns: 80px 1fr 180px 100px 100px 100px 80px 80px; gap: 8px; padding: 12px; border-bottom: 1px solid #e5e7eb; font-size: 11px; font-weight: 500; color: #6b7280; text-transform: uppercase; }
+.list-row { display: grid; grid-template-columns: 80px 1fr 180px 100px 100px 100px 80px 80px; gap: 8px; padding: 12px; border-bottom: 1px solid #e5e7eb; align-items: center; transition: background 0.2s; }
+.list-row:hover { background: #f9fafb; }
+.list-row .id { font-size: 12px; color: #3b82f6; font-weight: 500; }
+.list-row .name { font-size: 14px; color: #3b82f6; cursor: pointer; }
+.list-row .name:hover { text-decoration: underline; }
+.list-row .owner { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.list-row .owner .avatar { width: 24px; height: 24px; font-size: 10px; }
+.list-row .date { font-size: 14px; }
+.list-row .duration { font-size: 14px; color: #6b7280; }
+.list-row .actions { display: flex; gap: 8px; }
+.list-row .actions button { background: none; border: none; padding: 6px; border-radius: 4px; cursor: pointer; color: #6b7280; transition: all 0.2s; }
+.list-row .actions button:hover { background: #f3f4f6; color: #374151; }
+.list-row .actions button.delete:hover { background: #fef2f2; color: #ef4444; }
+
+/* Modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; }
+.modal-overlay.active { display: flex; }
+.modal { background: #fff; padding: 24px; border-radius: 12px; width: 100%; max-width: 400px; animation: modalIn 0.2s ease-out; }
+@keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+.modal h2 { font-size: 18px; font-weight: 600; margin-bottom: 20px; }
+.modal label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; color: #374151; }
+.modal input, .modal select { width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 14px; margin-bottom: 16px; }
+.modal input:focus, .modal select:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+.modal .dates { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.modal .buttons { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+
+/* Toast */
+#toast { position: fixed; bottom: 20px; right: 20px; background: #1f2937; color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 14px; opacity: 0; transform: translateY(10px); transition: all 0.3s; z-index: 1001; }
+#toast.show { opacity: 1; transform: translateY(0); }
+#toast.error { background: #ef4444; }
+
+/* Chevron Icon */
+.chevron { width: 16px; height: 16px; transition: transform 0.2s; }
+.chevron.collapsed { transform: rotate(-90deg); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Video Production Projects</h1>
+  <button class="btn btn-primary" onclick="openAddModal()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Add Task
+  </button>
+</header>
+
+<div class="toolbar">
+  <button class="btn btn-outline">
+    Sample Video Project
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+  </button>
+  <div class="view-toggle">
+    <button class="active" onclick="switchView('gantt', this)">Gantt</button>
+    <button onclick="switchView('kanban', this)">Kanban</button>
+    <button onclick="switchView('list', this)">List</button>
+  </div>
+</div>
+
+<div id="content"></div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h2 id="modalTitle">Add Task</h2>
+    <label>Task Name</label>
+    <input type="text" id="taskName" placeholder="Enter task name">
+    <label>Phase</label>
+    <select id="taskPhase">
+      <option value="pre">PRE-PRODUCTION</option>
+      <option value="prod">PRODUCTION</option>
+      <option value="post">POST-PRODUCTION</option>
+    </select>
+    <label>Status</label>
+    <select id="taskStatus">
+      <option value="open">Open</option>
+      <option value="progress">In Progress</option>
+      <option value="testing">Testing</option>
+      <option value="done">Done</option>
+    </select>
+    <label>Owner</label>
+    <input type="text" id="taskOwner" value="Sangita Edutainment">
+    <div class="dates">
+      <div>
+        <label>Start Date</label>
+        <input type="date" id="taskStart">
+      </div>
+      <div>
+        <label>Due Date</label>
+        <input type="date" id="taskDue">
+      </div>
+    </div>
+    <div class="buttons">
+      <button class="btn btn-danger" id="deleteBtn" onclick="deleteTask()" style="display:none">Delete</button>
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTask()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'VIDEO_TASKS';
+const PHASE_LABELS = { pre: 'PRE-PRODUCTION', prod: 'PRODUCTION', post: 'POST-PRODUCTION' };
+const STATUS_LABELS = { open: 'Open', progress: 'In Progress', testing: 'Testing', done: 'Done' };
+
+let currentView = 'gantt';
+let editingTask = null;
+let collapsed = { pre: false, prod: false, post: false };
+
+// Default tasks
+const defaultTasks = {
+  pre: [
+    { id: 'VP-T1', name: 'Client Inputs', status: 'done', phase: 'pre', owner: 'Sangita Edutainment', startDate: '2026-01-08', dueDate: '2026-01-14', duration: '5d' },
+    { id: 'VP-T2', name: 'References Collection', status: 'done', phase: 'pre', owner: 'Sangita Edutainment', startDate: '2026-01-14', dueDate: '2026-01-20', duration: '5d' },
+    { id: 'VP-T3', name: 'Project Analysis', status: 'done', phase: 'pre', owner: 'Sangita Edutainment', startDate: '2026-01-16', dueDate: '2026-01-22', duration: '5d' },
+    { id: 'VP-T4', name: 'Project Planning', status: 'done', phase: 'pre', owner: 'Sangita Edutainment', startDate: '2026-01-22', dueDate: '2026-01-28', duration: '5d' },
+    { id: 'VP-T5', name: 'Project Schedule', status: 'testing', phase: 'pre', owner: 'Sangita Edutainment', startDate: '2026-01-29', dueDate: '2026-02-04', duration: '5d' },
+    { id: 'VP-T6', name: 'Script Development', status: 'testing', phase: 'pre', owner: 'Sangita Edutainment', startDate: '2026-02-03', dueDate: '2026-02-09', duration: '5d' },
+    { id: 'VP-T7', name: 'Storyboard Creation', status: 'testing', phase: 'pre', owner: 'Sangita Edutainment', startDate: '2026-02-05', dueDate: '2026-02-11', duration: '5d' },
+  ],
+  prod: [
+    { id: 'VP-T8', name: 'Voiceover Recording', status: 'progress', phase: 'prod', owner: 'Sangita Edutainment', startDate: '2026-02-11', dueDate: '2026-02-17', duration: '5d' },
+    { id: 'VP-T9', name: 'Video Editing', status: 'progress', phase: 'prod', owner: 'Sangita Edutainment', startDate: '2026-02-13', dueDate: '2026-02-19', duration: '5d' },
+    { id: 'VP-T10', name: 'Text Synchronization', status: 'progress', phase: 'prod', owner: 'Sangita Edutainment', startDate: '2026-02-26', dueDate: '2026-03-04', duration: '5d' },
+    { id: 'VP-T11', name: 'Draft Output', status: 'progress', phase: 'prod', owner: 'Sangita Edutainment', startDate: '2026-03-03', dueDate: '2026-03-09', duration: '5d' },
+  ],
+  post: [
+    { id: 'VP-T12', name: 'Client Submission', status: 'open', phase: 'post', owner: 'Sangita Edutainment', startDate: '2026-03-10', dueDate: '2026-03-16', duration: '5d' },
+    { id: 'VP-T13', name: 'Client Feedback', status: 'open', phase: 'post', owner: 'Sangita Edutainment', startDate: '2026-03-17', dueDate: '2026-03-23', duration: '5d' },
+    { id: 'VP-T14', name: 'Final Output', status: 'open', phase: 'post', owner: 'Sangita Edutainment', startDate: '2026-03-24', dueDate: '2026-03-30', duration: '5d' },
+  ],
+};
+
+let tasks = JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultTasks;
+
+function saveStore() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+}
+
+function toast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = isError ? 'show error' : 'show';
+  setTimeout(() => t.className = '', 3000);
+}
+
+function switchView(view, btn) {
+  currentView = view;
+  document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+function togglePhase(phase) {
+  collapsed[phase] = !collapsed[phase];
+  render();
+}
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr);
+  return `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
+}
+
+function getAllTasks() {
+  return [...tasks.pre, ...tasks.prod, ...tasks.post];
+}
+
+// Gantt View
+function renderGantt() {
+  const weeks = [];
+  const startDate = new Date('2026-01-12');
+  for (let i = 0; i < 8; i++) {
+    const ws = new Date(startDate);
+    ws.setDate(startDate.getDate() + i * 7);
+    const we = new Date(ws);
+    we.setDate(ws.getDate() + 6);
+    const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    weeks.push({
+      label: `W${i+3} ${String(ws.getDate()).padStart(2,'0')}-${String(we.getDate()).padStart(2,'0')} ${months[ws.getMonth()]}`,
+      start: ws,
+      end: we
+    });
+  }
+
+  function getBarStyle(task) {
+    const ts = new Date(task.startDate);
+    const te = new Date(task.dueDate);
+    const totalDays = (weeks[7].end - weeks[0].start) / 86400000;
+    const startDay = Math.max(0, (ts - weeks[0].start) / 86400000);
+    const endDay = Math.min(totalDays, (te - weeks[0].start) / 86400000);
+    const left = (startDay / totalDays) * 100;
+    const width = Math.max(((endDay - startDay) / totalDays) * 100, 3);
+    return `left:${left}%;width:${width}%`;
+  }
+
+  let html = '<div class="gantt"><div class="gantt-header"><div>Task Name</div><div class="gantt-weeks">';
+  weeks.forEach(w => html += `<div>${w.label}</div>`);
+  html += '</div></div>';
+
+  ['pre', 'prod', 'post'].forEach(phase => {
+    const chevronClass = collapsed[phase] ? 'chevron collapsed' : 'chevron';
+    html += `<div class="phase-header" onclick="togglePhase('${phase}')">
+      <svg class="${chevronClass}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      ${PHASE_LABELS[phase]}
+    </div>`;
+    if (!collapsed[phase]) {
+      tasks[phase].forEach(t => {
+        html += `<div class="gantt-row task-row" onclick="openEditModal('${phase}','${t.id}')">
+          <div class="task-info"><div class="id">${t.id}</div><div class="name">${t.name}</div></div>
+          <div class="task-timeline"><div class="task-bar bar-${phase}" style="${getBarStyle(t)}">${t.name}</div></div>
+        </div>`;
+      });
+    }
+  });
+  html += '</div>';
+  document.getElementById('content').innerHTML = html;
+}
+
+// Kanban View
+function renderKanban() {
+  const allTasks = getAllTasks();
+  let html = '<div class="kanban">';
+  
+  ['open', 'progress', 'testing', 'done'].forEach(status => {
+    const statusTasks = allTasks.filter(t => t.status === status);
+    html += `<div class="kanban-column">
+      <div class="kanban-header ${status}">${STATUS_LABELS[status]} (${statusTasks.length})</div>
+      <div class="kanban-cards">`;
+    statusTasks.forEach(t => {
+      html += `<div class="kanban-card" onclick="openEditModal('${t.phase}','${t.id}')">
+        <div class="id">${t.id}</div>
+        <div class="name">${t.name}</div>
+        <div class="phase">${PHASE_LABELS[t.phase]}</div>
+        <div class="footer">
+          <div class="avatar">${t.owner.charAt(0)}</div>
+          <span class="date">${formatDate(t.dueDate)}</span>
+        </div>
+      </div>`;
+    });
+    html += '</div></div>';
+  });
+  html += '</div>';
+  document.getElementById('content').innerHTML = html;
+}
+
+// List View
+function renderList() {
+  let html = '<div class="list"><div class="list-header"><div>ID</div><div>Name</div><div>Owner</div><div>Status</div><div>Start</div><div>Due</div><div>Duration</div><div>Actions</div></div>';
+
+  ['pre', 'prod', 'post'].forEach(phase => {
+    const chevronClass = collapsed[phase] ? 'chevron collapsed' : 'chevron';
+    html += `<div class="phase-header" onclick="togglePhase('${phase}')">
+      <svg class="${chevronClass}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      ${PHASE_LABELS[phase]}
+    </div>`;
+    if (!collapsed[phase]) {
+      tasks[phase].forEach(t => {
+        html += `<div class="list-row">
+          <div class="id">${t.id}</div>
+          <div class="name" onclick="openEditModal('${phase}','${t.id}')">${t.name}</div>
+          <div class="owner"><div class="avatar">${t.owner.charAt(0)}</div><span>${t.owner}</span></div>
+          <div><span class="badge badge-${t.status}">${STATUS_LABELS[t.status]}</span></div>
+          <div class="date">${formatDate(t.startDate)}</div>
+          <div class="date">${formatDate(t.dueDate)}</div>
+          <div class="duration">${t.duration}</div>
+          <div class="actions">
+            <button onclick="openEditModal('${phase}','${t.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+            <button class="delete" onclick="confirmDelete('${phase}','${t.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+          </div>
+        </div>`;
+      });
+    }
+  });
+  html += '</div>';
+  document.getElementById('content').innerHTML = html;
+}
+
+function render() {
+  if (currentView === 'gantt') renderGantt();
+  else if (currentView === 'kanban') renderKanban();
+  else renderList();
+}
+
+function openAddModal() {
+  editingTask = null;
+  document.getElementById('modalTitle').textContent = 'Add Task';
+  document.getElementById('deleteBtn').style.display = 'none';
+  document.getElementById('taskName').value = '';
+  document.getElementById('taskPhase').value = 'pre';
+  document.getElementById('taskStatus').value = 'open';
+  document.getElementById('taskOwner').value = 'Sangita Edutainment';
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('taskStart').value = today;
+  const due = new Date();
+  due.setDate(due.getDate() + 5);
+  document.getElementById('taskDue').value = due.toISOString().split('T')[0];
+  document.getElementById('modal').classList.add('active');
+}
+
+function openEditModal(phase, id) {
+  const task = tasks[phase].find(t => t.id === id);
+  if (!task) return;
+  editingTask = { phase, id, task };
+  document.getElementById('modalTitle').textContent = 'Edit Task';
+  document.getElementById('deleteBtn').style.display = 'block';
+  document.getElementById('taskName').value = task.name;
+  document.getElementById('taskPhase').value = task.phase;
+  document.getElementById('taskStatus').value = task.status;
+  document.getElementById('taskOwner').value = task.owner;
+  document.getElementById('taskStart').value = task.startDate;
+  document.getElementById('taskDue').value = task.dueDate;
+  document.getElementById('modal').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('active');
+  editingTask = null;
+}
+
+function saveTask() {
+  const name = document.getElementById('taskName').value.trim();
+  if (!name) { toast('Task name is required', true); return; }
+
+  const taskData = {
+    name,
+    phase: document.getElementById('taskPhase').value,
+    status: document.getElementById('taskStatus').value,
+    owner: document.getElementById('taskOwner').value,
+    startDate: document.getElementById('taskStart').value,
+    dueDate: document.getElementById('taskDue').value,
+    duration: '5d'
+  };
+
+  if (editingTask) {
+    const oldPhase = editingTask.phase;
+    const idx = tasks[oldPhase].findIndex(t => t.id === editingTask.id);
+    if (idx > -1) {
+      const updated = { ...tasks[oldPhase][idx], ...taskData };
+      if (taskData.phase !== oldPhase) {
+        tasks[oldPhase].splice(idx, 1);
+        tasks[taskData.phase].push(updated);
+      } else {
+        tasks[oldPhase][idx] = updated;
+      }
+    }
+    toast('Task updated successfully');
+  } else {
+    const newTask = { id: 'VP-T' + Math.floor(Math.random() * 100), ...taskData };
+    tasks[taskData.phase].push(newTask);
+    toast('Task added successfully');
+  }
+  
+  saveStore();
+  closeModal();
+  render();
+}
+
+function deleteTask() {
+  if (!editingTask) return;
+  tasks[editingTask.phase] = tasks[editingTask.phase].filter(t => t.id !== editingTask.id);
+  saveStore();
+  toast('Task deleted');
+  closeModal();
+  render();
+}
+
+function confirmDelete(phase, id) {
+  const task = tasks[phase].find(t => t.id === id);
+  if (task && confirm(`Delete "${task.name}"?`)) {
+    tasks[phase] = tasks[phase].filter(t => t.id !== id);
+    saveStore();
+    toast('Task deleted');
+    render();
+  }
+}
+
+// Close modal on overlay click
+document.getElementById('modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// Initial render
+render();
+</script>
+</body>
 </html>
